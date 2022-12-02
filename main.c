@@ -15,17 +15,28 @@ int main() {
     int_list.vtable->append(&int_list, 11);
     printf("%p: %d, %p: %d %p: %d\n", int_list.head, int_list.head->value, int_list.head->next, int_list.head->next->value, int_list.tail, int_list.tail->value);
 
-
+    printf("\n");
     list$int$ int_list2 = create_list$int$();
 
     int_list2.vtable->prepend(&int_list2, 9);
-    printf("%p: %d, %p: %d\n", int_list2.head, int_list2.head->value, int_list2.tail, int_list2.tail->value);
+    printf("%p: %d, %p: %d\n", int_list2.tail, int_list2.tail->value, int_list2.head, int_list2.head->value);
 
     int_list2.vtable->prepend(&int_list2, 10);
-    printf("%p: %d, %p: %d\n", int_list2.head, int_list2.head->value, int_list2.tail, int_list2.tail->value);
+    printf("%p: %d, %p: %d\n", int_list2.tail, int_list2.tail->value, int_list2.head, int_list2.head->value);
 
     int_list2.vtable->prepend(&int_list2, 11);
-    printf("%p: %d, %p: %d %p: %d\n", int_list2.head, int_list2.head->value, int_list2.head->next, int_list2.head->next->value, int_list2.tail, int_list2.tail->value);
+    printf("%p: %d, %p: %d %p: %d\n", int_list2.tail, int_list2.tail->value, int_list2.tail->prev, int_list2.tail->prev->value, int_list2.head, int_list2.head->value);
+
+    list$double$ double_list = create_list$double$();
+    for (size_t i = 0; i < 100; i++) {
+        double_list.vtable->append(&double_list, i / 10.0);
+    }
+    printf("\n\n");
+    list_node$double$* node = double_list.head;
+    while (node) {
+        printf("%p: %f\n", node, node->value);
+        node = node->next;
+    }
 
 //    list_node$int$ int_node = {4, NULL};
 //    printf("%d, %p\n", int_node.data, int_node.next);

@@ -14,6 +14,11 @@ struct TEMPLATE_INTERNAL_SHORT_CAT(list_node);
 struct TEMPLATE_INTERNAL_FULL_NAME;
 
 //Prototypes
+//todo: get, pop_head, pop_tail (return the value and delete node, pick a better name), sort, remove at index, add at index, etc.
+// a function that deletes the list and takes in a single argument function that the val is passed to
+// (so lists holding pointers can have their pointers freed as the actual list is being freed)
+// see if you can't pull more macro trickery like `#define TEMPLATE_COMPARE` as some function and use that for sorting if present
+// falling back to the standard comparison ops if not
 struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* TEMPLATE_INTERNAL_FUNC_NAME(append)(struct TEMPLATE_INTERNAL_FULL_NAME* list, TEMPLATE_TYPE value);
 struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* TEMPLATE_INTERNAL_FUNC_NAME(prepend)(struct TEMPLATE_INTERNAL_FULL_NAME* list, TEMPLATE_TYPE value);
 
@@ -25,16 +30,16 @@ struct {
 
 //Actual list_node type
 typedef struct TEMPLATE_INTERNAL_SHORT_CAT(list_node) {
-    struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* prev;
-    struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* next;
+    struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* const prev;
+    struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* const next;
     TEMPLATE_TYPE value;
 } TEMPLATE_INTERNAL_SHORT_CAT(list_node);
 
 //Actual list type
 typedef struct TEMPLATE_INTERNAL_FULL_NAME {
-    size_t size;
-    struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* head;
-    struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* tail;
+    size_t const size;
+    struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* const head;
+    struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* const tail;
     typeof(TEMPLATE_INTERNAL_VTABLE) const* const vtable; //typeof is standard in C2X and supported widely before
 } TEMPLATE_INTERNAL_FULL_NAME;
 
@@ -56,12 +61,14 @@ struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* TEMPLATE_INTERNAL_FUNC_NAME(appen
         return node;
     memcpy(node, &temp_node, sizeof(temp_node));
     if (list->tail) {
-        list->tail->next = node; //todo: do the same memcpy shenanigans on the list itself so we can make head, tail, and size, const to prevent outside access, (ab)use offsetof and (char*) casting to only modify the bytes needed
+        memcpy(((char*) list->tail) + offsetof(struct TEMPLATE_INTERNAL_SHORT_CAT(list_node), next), &node, sizeof(node));
     } else { //Empty list, want to make both head and tail the same
-        list->head = node;
+        memcpy(((char*) list) + offsetof(TEMPLATE_INTERNAL_FULL_NAME, head), &node, sizeof(node));
     }
-    list->tail = node;
-    list->size++;
+    memcpy(((char*) list) + offsetof(TEMPLATE_INTERNAL_FULL_NAME, tail), &node, sizeof(node));
+
+    size_t new_size = list->size + 1;
+    memcpy(((char*) list) + offsetof(TEMPLATE_INTERNAL_FULL_NAME, size), &new_size, sizeof(new_size));
 
     return node;
 }
@@ -74,12 +81,14 @@ struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* TEMPLATE_INTERNAL_FUNC_NAME(prepe
         return node;
     memcpy(node, &temp_node, sizeof(temp_node));
     if (list->head) {
-        list->head->prev = node;
+        memcpy(((char*) list->head) + offsetof(struct TEMPLATE_INTERNAL_SHORT_CAT(list_node), prev), &node, sizeof(node));
     } else { //Empty list, want to make both head and tail the same
-        list->tail = node;
+        memcpy(((char*) list) + offsetof(TEMPLATE_INTERNAL_FULL_NAME, tail), &node, sizeof(node));
     }
-    list->head = node;
-    list->size++;
+    memcpy(((char*) list) + offsetof(TEMPLATE_INTERNAL_FULL_NAME, head), &node, sizeof(node));
+
+    size_t new_size = list->size + 1;
+    memcpy(((char*) list) + offsetof(TEMPLATE_INTERNAL_FULL_NAME, size), &new_size, sizeof(new_size));
 
     return node;
 }
