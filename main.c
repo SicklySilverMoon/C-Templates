@@ -14,6 +14,7 @@ int main() {
 
     int_list.vtable->append(&int_list, 11);
     printf("%p: %d, %p: %d %p: %d\n", int_list.head, int_list.head->value, int_list.head->next, int_list.head->next->value, int_list.tail, int_list.tail->value);
+    printf("int list size: %zu\n", int_list.size);
 
     printf("\n");
     list$int$ int_list2 = create_list$int$();
@@ -26,17 +27,26 @@ int main() {
 
     int_list2.vtable->prepend(&int_list2, 11);
     printf("%p: %d, %p: %d %p: %d\n", int_list2.tail, int_list2.tail->value, int_list2.tail->prev, int_list2.tail->prev->value, int_list2.head, int_list2.head->value);
+    printf("int list 2 size: %zu\n", int_list2.size);
 
     list$double$ double_list = create_list$double$();
     for (size_t i = 0; i < 100; i++) {
         double_list.vtable->append(&double_list, i / 10.0);
     }
     printf("\n\n");
-    list_node$double$* node = double_list.head;
-    while (node) {
-        printf("%p: %f\n", node, node->value);
-        node = node->next;
-    }
+//    list_node$double$* node = double_list.head;
+//    while (node) {
+//        printf("%p: %f\n", node, node->value);
+//        node = node->next;
+//    }
+    printf("get tests:\n");
+    printf("idx 4: %f\n", *double_list.vtable->get(&double_list, 4));
+    printf("idx 95: %f\n", *double_list.vtable->get(&double_list, 95));
+
+    double_list.vtable->remove(&double_list, 0);
+    printf("\nremoval tests:\n");
+    printf("idx 0: %f\n", double_list.head->value);
+    printf("idx 98: %f\n", *double_list.vtable->get(&double_list, 98));
 
 //    list_node$int$ int_node = {4, NULL};
 //    printf("%d, %p\n", int_node.data, int_node.next);
