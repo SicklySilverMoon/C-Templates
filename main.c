@@ -48,6 +48,18 @@ int main() {
     printf("idx 0: %f\n", double_list.head->value);
     printf("idx 98: %f\n", *double_list.vtable->get(&double_list, 98));
 
+    printf("\nAdd tests:\n");
+    printf("prev idx 0: %f\n", double_list.head->value);
+    double_list.vtable->add(&double_list, 0, -1);
+    printf("new  idx 0: %f\n\n", double_list.head->value);
+    list_node$double$* double_node = double_list.vtable->get_node(&double_list, 17);
+    printf("prev idx 17: %f\n", double_node->value);
+    double_list.vtable->add_node(&double_list, double_node, -2);
+    printf("new  idx 17: %f\n", *double_list.vtable->get(&double_list, 17));
+    if ((double_list.vtable->get_node(&double_list, 17) != double_node->prev) || (double_list.vtable->get_node(&double_list, 17)->next != double_node)) {
+        printf("ERROR: removal pointer consistency failure!");
+    }
+
 //    list_node$int$ int_node = {4, NULL};
 //    printf("%d, %p\n", int_node.data, int_node.next);
 //

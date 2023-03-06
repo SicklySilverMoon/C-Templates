@@ -26,13 +26,18 @@
     #error TEMPLATE_INTERNAL_NAME undefined! This is an error from the library creator!
 #endif
 
+#ifndef TEMPLATE_SEP //We don't actually undef this one as we don't want to force the user to write this again and again
+    #define TEMPLATE_SEP $
+#endif
+
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
 
-//2nd level indirection to expand all macros and allow writing 'cleaner' code
-#define TEMPLATE_INTERNAL_CAT(prefix, name, type, suffix) TEMPLATE_INTERNAL_CAT_(prefix, name, type, suffix)
-#define TEMPLATE_INTERNAL_CAT_(prefix, name, type, suffix) prefix ## name ## $ ## type ## $ ## suffix
+//3rd level indirection to expand all macros and allow writing 'cleaner' code
+#define TEMPLATE_INTERNAL_CAT(prefix, name, type, suffix) TEMPLATE_INTERNAL_CAT_(prefix, name, type, suffix, TEMPLATE_SEP) //expands all but SEP
+#define TEMPLATE_INTERNAL_CAT_(prefix, name, type, suffix, sep) TEMPLATE_INTERNAL_CAT__(prefix, name, type, suffix, sep) //forwards + expands SEP
+#define TEMPLATE_INTERNAL_CAT__(prefix, name, type, suffix, sep) prefix ## name ## sep ## type ## sep ## suffix //Glues all tokens together
 
 //Expands to actual proper type name (ex. `list$double$`)
 #define TEMPLATE_INTERNAL_FULL_NAME TEMPLATE_INTERNAL_CAT(, TEMPLATE_INTERNAL_NAME, TEMPLATE_TYPE, )

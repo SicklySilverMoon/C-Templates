@@ -7,14 +7,15 @@
 //And you create an instance of one `create_list$TEMPLATE_TYPE$`
 //ex. with int: `list$int$` & `create_list$int$`.
 
-//todo: oh my god this thing requires docs BADLY, you can tell what's going on in here
+//todo: oh my god this thing requires docs BADLY, you can't tell what's going on in here
+//code side this doesn't matter too much its not THAT bad once you understand it, user side, yeah this needs docs
 
 //Declarations
 struct TEMPLATE_INTERNAL_SHORT_CAT(list_node);
 struct TEMPLATE_INTERNAL_FULL_NAME;
 
 //Prototypes
-//todo: get, sort, remove at index, remove from node, add at index, add from node, etc.
+//todo: sort, etc.
 // a function that deletes the list and takes in a single argument function that the val is passed to
 // (so lists holding pointers can have their pointers freed as the actual list is being freed)
 // see if you can't pull more macro trickery like `#define TEMPLATE_COMPARE` as some function and use that for sorting if present
@@ -23,13 +24,13 @@ struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* TEMPLATE_INTERNAL_FUNC_NAME(appen
 struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* TEMPLATE_INTERNAL_FUNC_NAME(prepend)(struct TEMPLATE_INTERNAL_FULL_NAME* list, TEMPLATE_TYPE value);
 TEMPLATE_TYPE* TEMPLATE_INTERNAL_FUNC_NAME(get)(struct TEMPLATE_INTERNAL_FULL_NAME* list, size_t target_idx);
 struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* TEMPLATE_INTERNAL_FUNC_NAME(get_node)(struct TEMPLATE_INTERNAL_FULL_NAME* list, size_t target_idx);
+TEMPLATE_TYPE* TEMPLATE_INTERNAL_FUNC_NAME(add)(struct TEMPLATE_INTERNAL_FULL_NAME* list, size_t target_idx, TEMPLATE_TYPE value);
+TEMPLATE_TYPE* TEMPLATE_INTERNAL_FUNC_NAME(add_node)(struct TEMPLATE_INTERNAL_FULL_NAME* list, struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* node, TEMPLATE_TYPE value);
 TEMPLATE_TYPE TEMPLATE_INTERNAL_FUNC_NAME(remove)(struct TEMPLATE_INTERNAL_FULL_NAME* list, size_t target_idx);
 TEMPLATE_TYPE TEMPLATE_INTERNAL_FUNC_NAME(remove_node)(struct TEMPLATE_INTERNAL_FULL_NAME* list, struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* node);
-//remove
-//remove_node
-//destroy
-//destroy_callback (allow passing of a func to operate on every value as the list is being destroyed, good for freeing pointers
-//sort
+void TEMPLATE_INTERNAL_FUNC_NAME(destroy)(struct TEMPLATE_INTERNAL_FULL_NAME* list);
+void TEMPLATE_INTERNAL_FUNC_NAME(destroy_callback)(struct TEMPLATE_INTERNAL_FULL_NAME* list, void (callback)(TEMPLATE_TYPE*));
+void TEMPLATE_INTERNAL_FUNC_NAME(sort)(struct TEMPLATE_INTERNAL_FULL_NAME* list, int (*comp)(TEMPLATE_TYPE*, TEMPLATE_TYPE*));
 
 //vtable
 struct {
@@ -37,12 +38,20 @@ struct {
     typeof(TEMPLATE_INTERNAL_FUNC_NAME(prepend))* const prepend;
     typeof(TEMPLATE_INTERNAL_FUNC_NAME(get))* const get;
     typeof(TEMPLATE_INTERNAL_FUNC_NAME(get_node))* const get_node;
+    typeof(TEMPLATE_INTERNAL_FUNC_NAME(add))* const add;
+    typeof(TEMPLATE_INTERNAL_FUNC_NAME(add_node))* const add_node;
     typeof(TEMPLATE_INTERNAL_FUNC_NAME(remove))* const remove;
     typeof(TEMPLATE_INTERNAL_FUNC_NAME(remove_node))* const remove_node;
+//    typeof(TEMPLATE_INTERNAL_FUNC_NAME(destroy))* const destroy;
+//    typeof(TEMPLATE_INTERNAL_FUNC_NAME(destroy_callback))* const destroy_callback;
+//    typeof(TEMPLATE_INTERNAL_FUNC_NAME(sort))* const sort;
 } const TEMPLATE_INTERNAL_VTABLE = {TEMPLATE_INTERNAL_FUNC_NAME(append), TEMPLATE_INTERNAL_FUNC_NAME(prepend),
                                     TEMPLATE_INTERNAL_FUNC_NAME(get), TEMPLATE_INTERNAL_FUNC_NAME(get_node),
+                                    TEMPLATE_INTERNAL_FUNC_NAME(add), TEMPLATE_INTERNAL_FUNC_NAME(add_node),
                                     TEMPLATE_INTERNAL_FUNC_NAME(remove), TEMPLATE_INTERNAL_FUNC_NAME(remove_node),
                                     };
+//                                    TEMPLATE_INTERNAL_FUNC_NAME(destroy), TEMPLATE_INTERNAL_FUNC_NAME(destroy_callback),
+//                                    TEMPLATE_INTERNAL_FUNC_NAME(sort),};
 
 //Actual list_node type
 typedef struct TEMPLATE_INTERNAL_SHORT_CAT(list_node) {
@@ -59,6 +68,17 @@ typedef struct TEMPLATE_INTERNAL_FULL_NAME {
     typeof(TEMPLATE_INTERNAL_VTABLE) const* const vtable; //typeof is standard in C2X and supported widely before
 } TEMPLATE_INTERNAL_FULL_NAME;
 
+TEMPLATE_INTERNAL_SHORT_CAT(list_node)* TEMPLATE_INTERNAL_FUNC_NAME(make_node)(TEMPLATE_TYPE value) {
+    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* node = calloc(1, sizeof(TEMPLATE_INTERNAL_SHORT_CAT(list_node)));
+    if (!node)
+        return node;
+
+    //Have to memcpy the value in cause the user might set the template type to a const type
+    memcpy(((char*) node) + offsetof(TEMPLATE_INTERNAL_SHORT_CAT(list_node), value), &value, sizeof(value));
+
+    return node;
+}
+
 //Function implementations
 //Yup, in a header
 struct TEMPLATE_INTERNAL_FULL_NAME TEMPLATE_INTERNAL_PREFIX_CAT(create_)(void) {
@@ -70,13 +90,10 @@ struct TEMPLATE_INTERNAL_FULL_NAME TEMPLATE_INTERNAL_PREFIX_CAT(create_)(void) {
 //memcpy and pointer cast into an allocated struct like this is legal as the const modification rule only applies to objects *defined* as const,
 //and modifying the mem of the struct, which is NOT const defined, is legal C17[6.7.3/6] (and sets effective type C17[6.5/6]).
 struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* TEMPLATE_INTERNAL_FUNC_NAME(append)(struct TEMPLATE_INTERNAL_FULL_NAME* list, TEMPLATE_TYPE value) {
-    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* node = calloc(1, sizeof(TEMPLATE_INTERNAL_SHORT_CAT(list_node)));
-
+    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* node = TEMPLATE_INTERNAL_FUNC_NAME(make_node)(value);
     if (!node)
         return node;
 
-    //Have to memcpy the value in cause the user might set the template type to a const type
-    memcpy(((char*) node) + offsetof(TEMPLATE_INTERNAL_SHORT_CAT(list_node), value), &value, sizeof(value));
     *((struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &node->prev) = list->tail;
 
     if (list->tail) {
@@ -92,13 +109,10 @@ struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* TEMPLATE_INTERNAL_FUNC_NAME(appen
 }
 
 struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* TEMPLATE_INTERNAL_FUNC_NAME(prepend)(struct TEMPLATE_INTERNAL_FULL_NAME* list, TEMPLATE_TYPE value) {
-    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* node = calloc(1, sizeof(TEMPLATE_INTERNAL_SHORT_CAT(list_node)));
-
+    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* node = TEMPLATE_INTERNAL_FUNC_NAME(make_node)(value);
     if (!node)
         return node;
 
-    //Have to memcpy the value in cause the user might set the template type to a const type
-    memcpy(((char*) node) + offsetof(TEMPLATE_INTERNAL_SHORT_CAT(list_node), value), &value, sizeof(value));
     *((struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &node->next) = list->head;
 
     if (list->head) {
@@ -142,6 +156,29 @@ struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* TEMPLATE_INTERNAL_FUNC_NAME(get_n
     }
 }
 
+TEMPLATE_TYPE* TEMPLATE_INTERNAL_FUNC_NAME(add)(struct TEMPLATE_INTERNAL_FULL_NAME* list, size_t target_idx, TEMPLATE_TYPE val) {
+    return TEMPLATE_INTERNAL_FUNC_NAME(add_node)(list, TEMPLATE_INTERNAL_FUNC_NAME(get_node)(list, target_idx), val);
+}
+
+TEMPLATE_TYPE* TEMPLATE_INTERNAL_FUNC_NAME(add_node)(struct TEMPLATE_INTERNAL_FULL_NAME* list, struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* node, TEMPLATE_TYPE value) {
+    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* new_node = TEMPLATE_INTERNAL_FUNC_NAME(make_node)(value);
+    if (!new_node)
+        return NULL;
+
+    if (node->prev) {
+        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &node->prev->next) = new_node;
+        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &new_node->prev) = node->prev;
+    }
+    *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &node->prev) = new_node;
+    *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &new_node->next) = node;
+
+    if (list->head == node) {
+        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &list->head) = new_node;
+    }
+
+    return &new_node->value;
+}
+
 TEMPLATE_TYPE TEMPLATE_INTERNAL_FUNC_NAME(remove)(struct TEMPLATE_INTERNAL_FULL_NAME* list, size_t target_idx) {
     return TEMPLATE_INTERNAL_FUNC_NAME(remove_node)(list, TEMPLATE_INTERNAL_FUNC_NAME(get_node)(list, target_idx));
 }
@@ -162,6 +199,18 @@ TEMPLATE_TYPE TEMPLATE_INTERNAL_FUNC_NAME(remove_node)(struct TEMPLATE_INTERNAL_
 
     free(node);
     return value;
+}
+
+void TEMPLATE_INTERNAL_FUNC_NAME(destroy)(struct TEMPLATE_INTERNAL_FULL_NAME* list) {
+    //todo
+}
+
+void TEMPLATE_INTERNAL_FUNC_NAME(destroy_callback)(struct TEMPLATE_INTERNAL_FULL_NAME* list, void (callback)(TEMPLATE_TYPE*)) {
+    //todo
+}
+
+void TEMPLATE_INTERNAL_FUNC_NAME(sort)(struct TEMPLATE_INTERNAL_FULL_NAME* list, int (*comp)(TEMPLATE_TYPE*, TEMPLATE_TYPE*)) {
+    //todo
 }
 
 #include "../common_end.h"
