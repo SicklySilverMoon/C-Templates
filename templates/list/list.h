@@ -42,15 +42,15 @@ struct {
     typeof(TEMPLATE_INTERNAL_FUNC_NAME(add_node))* const add_node;
     typeof(TEMPLATE_INTERNAL_FUNC_NAME(remove))* const remove;
     typeof(TEMPLATE_INTERNAL_FUNC_NAME(remove_node))* const remove_node;
-//    typeof(TEMPLATE_INTERNAL_FUNC_NAME(destroy))* const destroy;
-//    typeof(TEMPLATE_INTERNAL_FUNC_NAME(destroy_callback))* const destroy_callback;
+    typeof(TEMPLATE_INTERNAL_FUNC_NAME(destroy))* const destroy;
+    typeof(TEMPLATE_INTERNAL_FUNC_NAME(destroy_callback))* const destroy_callback;
 //    typeof(TEMPLATE_INTERNAL_FUNC_NAME(sort))* const sort;
 } const TEMPLATE_INTERNAL_VTABLE = {TEMPLATE_INTERNAL_FUNC_NAME(append), TEMPLATE_INTERNAL_FUNC_NAME(prepend),
                                     TEMPLATE_INTERNAL_FUNC_NAME(get), TEMPLATE_INTERNAL_FUNC_NAME(get_node),
                                     TEMPLATE_INTERNAL_FUNC_NAME(add), TEMPLATE_INTERNAL_FUNC_NAME(add_node),
                                     TEMPLATE_INTERNAL_FUNC_NAME(remove), TEMPLATE_INTERNAL_FUNC_NAME(remove_node),
+                                    TEMPLATE_INTERNAL_FUNC_NAME(destroy), TEMPLATE_INTERNAL_FUNC_NAME(destroy_callback),
                                     };
-//                                    TEMPLATE_INTERNAL_FUNC_NAME(destroy), TEMPLATE_INTERNAL_FUNC_NAME(destroy_callback),
 //                                    TEMPLATE_INTERNAL_FUNC_NAME(sort),};
 
 //Actual list_node type
@@ -202,11 +202,18 @@ TEMPLATE_TYPE TEMPLATE_INTERNAL_FUNC_NAME(remove_node)(struct TEMPLATE_INTERNAL_
 }
 
 void TEMPLATE_INTERNAL_FUNC_NAME(destroy)(struct TEMPLATE_INTERNAL_FULL_NAME* list) {
-    //todo
+    TEMPLATE_INTERNAL_FUNC_NAME(destroy_callback)(list, NULL);
 }
 
 void TEMPLATE_INTERNAL_FUNC_NAME(destroy_callback)(struct TEMPLATE_INTERNAL_FULL_NAME* list, void (callback)(TEMPLATE_TYPE*)) {
-    //todo
+    struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* node = list->head;
+    while (node) {
+        struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* next = node->next;
+        if (callback)
+            callback(&node->value);
+        free(node);
+        node = next;
+    }
 }
 
 void TEMPLATE_INTERNAL_FUNC_NAME(sort)(struct TEMPLATE_INTERNAL_FULL_NAME* list, int (*comp)(TEMPLATE_TYPE*, TEMPLATE_TYPE*)) {

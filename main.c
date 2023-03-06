@@ -2,6 +2,12 @@
 
 #include "types.h"
 
+//list$int$ const int_list = {.size = 0, .vtable = &template_internal_list$int$____vtable____};
+
+void print_int(int* int_ptr) {
+    printf("%d, ", *int_ptr);
+}
+
 //Just an example for the provided template(s)
 int main() {
     list$int$ int_list = create_list$int$();
@@ -16,6 +22,8 @@ int main() {
     printf("%p: %d, %p: %d %p: %d\n", int_list.head, int_list.head->value, int_list.head->next, int_list.head->next->value, int_list.tail, int_list.tail->value);
     printf("int list size: %zu\n", int_list.size);
 
+    int_list.vtable->destroy(&int_list);
+
     printf("\n");
     list$int$ int_list2 = create_list$int$();
 
@@ -28,6 +36,10 @@ int main() {
     int_list2.vtable->prepend(&int_list2, 11);
     printf("%p: %d, %p: %d %p: %d\n", int_list2.tail, int_list2.tail->value, int_list2.tail->prev, int_list2.tail->prev->value, int_list2.head, int_list2.head->value);
     printf("int list 2 size: %zu\n", int_list2.size);
+
+    printf("Contents of list being destroyed: ");
+    int_list2.vtable->destroy_callback(&int_list2, print_int);
+    printf("\n");
 
     list$double$ double_list = create_list$double$();
     for (size_t i = 0; i < 100; i++) {
