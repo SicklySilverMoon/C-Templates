@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
+//#include <stdbool.h>
 
 //3rd level indirection to expand all macros and allow writing 'cleaner' code
 #define TEMPLATE_INTERNAL_CAT(prefix, name, type, suffix) TEMPLATE_INTERNAL_CAT_(prefix, name, type, suffix, TEMPLATE_SEP) //expands all but SEP
