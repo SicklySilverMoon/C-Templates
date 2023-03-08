@@ -3,6 +3,8 @@
 
 #include <stddef.h>
 
+//#define TEMPLATE_ISNT_STATIC //comment out this one and you also need to comment out `#define TEMPLATE_IS_IMPL` in list_test.c
+
 #define TEMPLATE_TYPE int
 #include "templates/list/list.h"
 

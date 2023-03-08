@@ -1,3 +1,4 @@
+//#define TEMPLATE_IS_IMPL //comment out this one and you also need to comment out `#define TEMPLATE_ISNT_STATIC 0` in list_test.h
 #include "list_test.h"
 
 #include <assert.h>
