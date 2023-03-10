@@ -219,27 +219,63 @@ TEMPLATE_INTERNAL_staticish TEMPLATE_TYPE TEMPLATE_INTERNAL_func_name(remove_nod
 }
 
 TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(swap)(struct TEMPLATE_INTERNAL_FullName* list, size_t target1, size_t target2) {
+    if (target1 == target2)
+        return;
     TEMPLATE_INTERNAL_func_name(swap_node)(list, TEMPLATE_INTERNAL_func_name(get_node)(list, target1), TEMPLATE_INTERNAL_func_name(get_node)(list, target2));
 }
 
 TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(swap_node)(struct TEMPLATE_INTERNAL_FullName* list, struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* n1, struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* n2) {
-    struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* n1_prev = n1->prev;
-    struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* n1_next = n1->next;
+    if (n1 == NULL || n2 == NULL || n1 == n2)
+        return;
 
-    *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &n1->prev) = n2->prev;
-    *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &n1->next) = n2->next;
+    struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* n1_prev;
+    if (n1->prev != n2)
+        n1_prev = n1->prev;
+    else
+        n1_prev = n1;
+    struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* n1_next;
+    if (n1->next != n2)
+        n1_next = n1->next;
+    else
+        n1_next = n1;
+    struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* n2_prev;
+    if (n2->prev != n1)
+        n2_prev = n2->prev;
+    else
+        n2_prev = n2;
+    struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* n2_next;
+    if (n2->next != n1)
+        n2_next = n2->next;
+    else
+        n2_next = n2;
+
+
+    *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &n1->prev) = n2_prev;
+    *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &n1->next) = n2_next;
     *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &n2->prev) = n1_prev;
     *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &n2->next) = n1_next;
+    //todo: need to adjust n1->prev->next to point to n1 after, likewise with n2->next->prev
 
-    if (n1 == list->head) {
-        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &list->head) = n2;
-    } else if (n1 == list->tail) {
-        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &list->tail) = n2;
-    }
-    if (n2 == list->head) {
+    if (n1->prev != NULL) { //n2 was NOT head
+        *((struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &n1->prev->next) = n1;
+    } else {
         *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &list->head) = n1;
-    } else if (n2 == list->tail) {
+    }
+    if (n1->next != NULL) { //n2 was NOT tail
+        *((struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &n1->next->prev) = n1;
+    } else {
         *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &list->tail) = n1;
+    }
+
+    if (n2->prev != NULL) { //n1 was NOT head
+        *((struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &n2->prev->next) = n2;
+    } else {
+        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &list->head) = n2;
+    }
+    if (n2->next != NULL) { //n1 was NOT tail
+        *((struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &n2->next->prev) = n2;
+    } else {
+        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &list->tail) = n2;
     }
 }
 

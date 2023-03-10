@@ -68,11 +68,76 @@ int list_test() {
         assert(node->value == i);
         node = node->next;
     }
-    node = int_list.vtable->get_node(&int_list, 3);
-    //todo: check that the path is consistent
+    node = int_list.tail;
+    for (size_t i = int_list.size - 1; node != NULL; i--) {
+        assert(node->value == i);
+        node = node->prev;
+    }
 
-    //todo: test swap
+    int_list.vtable->swap(&int_list, 0, int_list.size - 1);
+    assert(int_list.head->prev == NULL);
+    assert(int_list.tail->next == NULL);
+    int_list.vtable->swap(&int_list, int_list.size - 1, 0);
+    assert(int_list.head->prev == NULL);
+    assert(int_list.tail->next == NULL);
 
+    //Swap tests
+    int_list.vtable->swap(&int_list, 3, 4);
+    assert(*int_list.vtable->get(&int_list, 3) == 4);
+    assert(*int_list.vtable->get(&int_list, 4) == 3);
+    assert(int_list.head->prev == NULL);
+    assert(int_list.tail->next == NULL);
+    assert(int_list.tail->value == 3);
+
+    int_list.vtable->swap(&int_list, 3, 4);
+    assert(*int_list.vtable->get(&int_list, 3) == 3);
+    assert(*int_list.vtable->get(&int_list, 4) == 4);
+    assert(int_list.head->prev == NULL);
+    assert(int_list.tail->next == NULL);
+    assert(int_list.tail->value == 4);
+
+    int_list.vtable->swap(&int_list, 4, 3);
+    assert(*int_list.vtable->get(&int_list, 3) == 4);
+    assert(*int_list.vtable->get(&int_list, 4) == 3);
+    assert(int_list.head->prev == NULL);
+    assert(int_list.tail->next == NULL);
+    assert(int_list.tail->value == 3);
+
+    int_list.vtable->swap(&int_list, 4, 3);
+    assert(*int_list.vtable->get(&int_list, 3) == 3);
+    assert(*int_list.vtable->get(&int_list, 4) == 4);
+    assert(int_list.head->prev == NULL);
+    assert(int_list.tail->next == NULL);
+    assert(int_list.tail->value == 4);
+
+    int_list.vtable->swap(&int_list, 0, 1);
+    assert(*int_list.vtable->get(&int_list, 0) == 1);
+    assert(*int_list.vtable->get(&int_list, 1) == 0);
+    assert(int_list.head->prev == NULL);
+    assert(int_list.tail->next == NULL);
+    assert(int_list.head->value == 1);
+
+    int_list.vtable->swap(&int_list, 0, 1);
+    assert(*int_list.vtable->get(&int_list, 0) == 0);
+    assert(*int_list.vtable->get(&int_list, 1) == 1);
+    assert(int_list.head->prev == NULL);
+    assert(int_list.tail->next == NULL);
+    assert(int_list.head->value == 0);
+
+    int_list.vtable->swap(&int_list, 1, 0);
+    assert(*int_list.vtable->get(&int_list, 0) == 1);
+    assert(*int_list.vtable->get(&int_list, 1) == 0);
+    assert(int_list.head->prev == NULL);
+    assert(int_list.tail->next == NULL);
+    assert(int_list.head->value == 1);
+
+    int_list.vtable->swap(&int_list, 1, 0);
+    assert(*int_list.vtable->get(&int_list, 0) == 0);
+    assert(*int_list.vtable->get(&int_list, 1) == 1);
+    assert(int_list.head->prev == NULL);
+    assert(int_list.tail->next == NULL);
+    assert(int_list.head->value == 0);
+    //todo: test swap_node
 
     //todo: test destroy and destroy_callback
 
