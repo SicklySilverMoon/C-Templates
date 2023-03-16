@@ -51,7 +51,7 @@ TEMPLATE_INTERNAL_externish struct {
     typeof(TEMPLATE_INTERNAL_func_name(swap_node))* const swap_node;
     typeof(TEMPLATE_INTERNAL_func_name(destroy))* const destroy;
     typeof(TEMPLATE_INTERNAL_func_name(destroy_callback))* const destroy_callback;
-//    typeof(TEMPLATE_INTERNAL_func_name(sort))* const sort;
+    typeof(TEMPLATE_INTERNAL_func_name(sort))* const sort;
 } const TEMPLATE_INTERNAL_vTable
 #if defined(TEMPLATE_IS_IMPL) || !defined(TEMPLATE_ISNT_STATIC)
      = {TEMPLATE_INTERNAL_func_name(append), TEMPLATE_INTERNAL_func_name(prepend),
@@ -60,8 +60,8 @@ TEMPLATE_INTERNAL_externish struct {
                                         TEMPLATE_INTERNAL_func_name(remove), TEMPLATE_INTERNAL_func_name(remove_node),
                                         TEMPLATE_INTERNAL_func_name(swap), TEMPLATE_INTERNAL_func_name(swap_node),
                                         TEMPLATE_INTERNAL_func_name(destroy), TEMPLATE_INTERNAL_func_name(destroy_callback),
+                                        TEMPLATE_INTERNAL_func_name(sort),
                                         };
-//                                        TEMPLATE_INTERNAL_func_name(sort),};
 #else
 ;
 #endif
@@ -294,8 +294,67 @@ TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(destroy_callback)(s
     }
 }
 
+struct TEMPLATE_INTERNAL_TYPE_NAME(sub_list) {
+    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* left;
+    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* right;
+};
+//https://en.wikipedia.org/wiki/Merge_sort#Bottom-up_implementation
+//Thanks wikipedia
+//todo: test these
+//todo: also add a macro like TEMPLATE_COMPARE with values like 0 meaning it uses <, 1 >, 2 <=, 3 >=, etc. and if not defined then require passing of a comp function
+TEMPLATE_INTERNAL_staticish struct TEMPLATE_INTERNAL_TYPE_NAME(sub_list) TEMPLATE_INTERNAL_func_name(merge)(TEMPLATE_INTERNAL_SHORT_CAT(list_node)* left, TEMPLATE_INTERNAL_SHORT_CAT(list_node)* right, size_t l_end, size_t r_end, TEMPLATE_INTERNAL_SHORT_CAT(list_node)* prev_right, int (*comp)(TEMPLATE_TYPE*, TEMPLATE_TYPE*)) {
+    size_t l_idx = 0, r_idx = 0;
+    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* l_cur = left;
+    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* r_cur = right;
+    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* merged_head = NULL;
+    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* merged_tail = NULL;
+    while (l_idx < l_end) {
+        if (comp(&l_cur->value, &r_cur->value) < 0) {
+            *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next) = l_cur; //todo: this will crash cause merged_tail is NULL
+            l_idx++;
+            if (l_cur->next != NULL)
+                l_cur = l_cur->next;
+        } else {
+            *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next) = r_cur;
+            r_idx++;
+            if (r_cur->next != NULL)
+                r_cur = r_cur->next;
+        }
+        if (merged_head == NULL) {
+            merged_tail = merged_tail->next;
+            merged_head = merged_tail;
+            *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->prev) = prev_right;
+        } else {
+            *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next->prev) = merged_tail;
+            merged_tail = merged_tail->next;
+        }
+    }
+    while (r_idx < r_end) {
+        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next) = r_cur;
+        r_idx++;
+        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next->prev) = merged_tail;
+        merged_tail = merged_tail->next;
+    }
+    struct TEMPLATE_INTERNAL_TYPE_NAME(sub_list) ret = {merged_head, merged_tail};
+    return ret;
+}
+
 TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(sort)(struct TEMPLATE_INTERNAL_FullName* list, int (*comp)(TEMPLATE_TYPE*, TEMPLATE_TYPE*)) {
-    //todo
+    struct TEMPLATE_INTERNAL_TYPE_NAME(sub_list) sub = {NULL, NULL};
+    for (size_t width = 1; width < list->size; width++) {
+        TEMPLATE_INTERNAL_SHORT_CAT(list_node)* left = list->head;
+        TEMPLATE_INTERNAL_SHORT_CAT(list_node)* right = list->head;
+        for (size_t c = 0; c < width; c++)
+            right = right->next; //This is probably going to crash for a list of uneven length
+        for (size_t i = 0; i < list->size; i += width * 2) {
+            size_t const l_end = (i + width) < (list->size) ? (i + width) : (list->size);
+            size_t const r_end = (i + width * 2) < (list->size) ? (i + width * 2) : (list->size);
+            sub = TEMPLATE_INTERNAL_func_name(merge)(left, right, l_end, r_end, sub.right, comp);
+            if (i == 0)
+                *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &list->head) = sub.left;
+        }
+    }
+    *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &list->tail) = sub.right;
 }
 #endif
 

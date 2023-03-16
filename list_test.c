@@ -4,6 +4,14 @@
 #include <assert.h>
 #include <stdio.h>
 
+int int_compare(int* a, int* b) {
+    if (*a > *b)
+        return 1;
+    else if (*a < *b)
+        return -1;
+    return 0;
+}
+
 int list_test() {
     list$int$ int_list = create_list$int$();
     list$long_long$ long_long_list = create_list$long_long$();
@@ -142,5 +150,6 @@ int list_test() {
     //todo: test destroy and destroy_callback
 
     //todo: test sort
+    int_list.vtable->sort(&int_list, int_compare);
     return 0;
 }
