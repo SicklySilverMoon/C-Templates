@@ -310,24 +310,33 @@ TEMPLATE_INTERNAL_staticish struct TEMPLATE_INTERNAL_TYPE_NAME(sub_list) TEMPLAT
     TEMPLATE_INTERNAL_SHORT_CAT(list_node)* merged_tail = NULL;
     while (l_idx < l_end) {
         if (comp(&l_cur->value, &r_cur->value) < 0) {
-            *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next) = l_cur; //todo: this will crash cause merged_tail is NULL
+            if (merged_head == NULL)
+                merged_tail = l_cur;
+            else
+                *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next) = l_cur;
             l_idx++;
-            if (l_cur->next != NULL)
+            if (l_cur->next != right && l_cur->next != NULL)
                 l_cur = l_cur->next;
         } else {
-            *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next) = r_cur;
+            if (merged_head == NULL)
+                merged_tail = r_cur;
+            else
+                *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next) = r_cur;
             r_idx++;
             if (r_cur->next != NULL)
                 r_cur = r_cur->next;
         }
         if (merged_head == NULL) {
-            merged_tail = merged_tail->next;
             merged_head = merged_tail;
             *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->prev) = prev_right;
+            if (prev_right)
+                *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &prev_right->next) = merged_tail;
         } else {
             *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next->prev) = merged_tail;
             merged_tail = merged_tail->next;
         }
+        assert(merged_tail->next != merged_tail);
+        assert(merged_tail->prev != merged_tail);
     }
     while (r_idx < r_end) {
         *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next) = r_cur;
@@ -341,17 +350,42 @@ TEMPLATE_INTERNAL_staticish struct TEMPLATE_INTERNAL_TYPE_NAME(sub_list) TEMPLAT
 
 TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(sort)(struct TEMPLATE_INTERNAL_FullName* list, int (*comp)(TEMPLATE_TYPE*, TEMPLATE_TYPE*)) {
     struct TEMPLATE_INTERNAL_TYPE_NAME(sub_list) sub = {NULL, NULL};
-    for (size_t width = 1; width < list->size; width++) {
+    for (size_t width = 1; width < list->size; width = width * 2) {
         TEMPLATE_INTERNAL_SHORT_CAT(list_node)* left = list->head;
         TEMPLATE_INTERNAL_SHORT_CAT(list_node)* right = list->head;
-        for (size_t c = 0; c < width; c++)
-            right = right->next; //This is probably going to crash for a list of uneven length
         for (size_t i = 0; i < list->size; i += width * 2) {
-            size_t const l_end = (i + width) < (list->size) ? (i + width) : (list->size);
-            size_t const r_end = (i + width * 2) < (list->size) ? (i + width * 2) : (list->size);
+            size_t l_end = width;
+            size_t r_end = width;
+            if (i + width >= list->size) { //Means last sub-list is smaller than width, by def already sorted, gets merged into next
+                *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) sub.right->next->prev) = sub.right;
+                continue;
+            } else if (i + width * 2 > list->size) {
+                //i = 1, w = 2, s = 4
+                //
+                //i + 2 = 3
+                //3 < 4, all good
+                //
+                //i + w * 2 = 1 + 4 = 5
+                //5 > 4
+                //s - (i + w) = 4 - (1 + 2) = 1
+                //(i + w) + 1 = 1 + 2 + 1 = 4
+                //
+                //i = 3, w = 7, s = 13
+                //i+2w=17
+                //17>13
+                //s - (i + w) = 13 - (3 + 7) = 3
+                //(i + w) + 3 = (3 + 7) + 3 = 13
+                r_end = list->size - (i + width);
+            }
+            for (size_t c = 0; c < width; c++)
+                right = right->next;
+
+            assert(left != NULL);
+            assert(right != NULL);
             sub = TEMPLATE_INTERNAL_func_name(merge)(left, right, l_end, r_end, sub.right, comp);
             if (i == 0)
                 *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &list->head) = sub.left;
+            left = right = sub.right->next;
         }
     }
     *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &list->tail) = sub.right;
