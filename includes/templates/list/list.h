@@ -55,13 +55,13 @@ TEMPLATE_INTERNAL_externish struct {
 } const TEMPLATE_INTERNAL_vTable
 #if defined(TEMPLATE_IS_IMPL) || !defined(TEMPLATE_ISNT_STATIC)
      = {TEMPLATE_INTERNAL_func_name(append), TEMPLATE_INTERNAL_func_name(prepend),
-                                        TEMPLATE_INTERNAL_func_name(get), TEMPLATE_INTERNAL_func_name(get_node),
-                                        TEMPLATE_INTERNAL_func_name(add), TEMPLATE_INTERNAL_func_name(add_node),
-                                        TEMPLATE_INTERNAL_func_name(remove), TEMPLATE_INTERNAL_func_name(remove_node),
-                                        TEMPLATE_INTERNAL_func_name(swap), TEMPLATE_INTERNAL_func_name(swap_node),
-                                        TEMPLATE_INTERNAL_func_name(destroy), TEMPLATE_INTERNAL_func_name(destroy_callback),
-                                        TEMPLATE_INTERNAL_func_name(sort),
-                                        };
+                TEMPLATE_INTERNAL_func_name(get), TEMPLATE_INTERNAL_func_name(get_node),
+                TEMPLATE_INTERNAL_func_name(add), TEMPLATE_INTERNAL_func_name(add_node),
+                TEMPLATE_INTERNAL_func_name(remove), TEMPLATE_INTERNAL_func_name(remove_node),
+                TEMPLATE_INTERNAL_func_name(swap), TEMPLATE_INTERNAL_func_name(swap_node),
+                TEMPLATE_INTERNAL_func_name(destroy), TEMPLATE_INTERNAL_func_name(destroy_callback),
+                TEMPLATE_INTERNAL_func_name(sort),
+                    };
 #else
 ;
 #endif

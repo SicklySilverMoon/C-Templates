@@ -12,7 +12,7 @@ int int_compare(int* a, int* b) {
     return 0;
 }
 
-int list_test() {
+void list_test() {
     list$int$ int_list = create_list$int$();
     list$long_long$ long_long_list = create_list$long_long$();
     list$int_const$ int_const_list = create_list$int_const$();
@@ -151,5 +151,5 @@ int list_test() {
 
     //todo: test sort
     int_list.vtable->sort(&int_list, int_compare);
-    return 0;
+    return;
 }
