@@ -351,13 +351,16 @@ TEMPLATE_INTERNAL_staticish struct TEMPLATE_INTERNAL_TYPE_NAME(sub_list) TEMPLAT
 TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(sort)(struct TEMPLATE_INTERNAL_FullName* list, int (*comp)(TEMPLATE_TYPE*, TEMPLATE_TYPE*)) {
     struct TEMPLATE_INTERNAL_TYPE_NAME(sub_list) sub = {NULL, NULL};
     for (size_t width = 1; width < list->size; width = width * 2) {
+        sub.left = NULL;
+        sub.right = NULL;
         TEMPLATE_INTERNAL_SHORT_CAT(list_node)* left = list->head;
         TEMPLATE_INTERNAL_SHORT_CAT(list_node)* right = list->head;
         for (size_t i = 0; i < list->size; i += width * 2) {
             size_t l_end = width;
             size_t r_end = width;
             if (i + width >= list->size) { //Means last sub-list is smaller than width, by def already sorted, gets merged into next
-                *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) sub.right->next->prev) = sub.right;
+                assert(sub.right->next != sub.right);
+                *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &sub.right->next->prev) = sub.right;
                 continue;
             } else if (i + width * 2 > list->size) {
                 //i = 1, w = 2, s = 4
@@ -385,6 +388,7 @@ TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(sort)(struct TEMPLA
             sub = TEMPLATE_INTERNAL_func_name(merge)(left, right, l_end, r_end, sub.right, comp);
             if (i == 0)
                 *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &list->head) = sub.left;
+            assert(list->head->prev == NULL);
             left = right = sub.right->next;
         }
     }
