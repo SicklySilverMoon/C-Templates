@@ -3,6 +3,7 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <time.h>
 
 int int_compare(int* a, int* b) {
     if (*a > *b)
@@ -151,5 +152,33 @@ void list_test() {
 
     //todo: test sort
     int_list.vtable->sort(&int_list, int_compare);
-    return;
+    for (size_t i = 0; i < int_list.size; i++) {
+        assert(*int_list.vtable->get(&int_list, i) == i);
+    }
+
+    size_t original_size = int_list.size;
+    for (size_t i = 0; i < original_size; i++)
+        int_list.vtable->remove(&int_list, 0); //todo: make a clear() and clear_callback() func
+    assert(int_list.size == 0);
+
+    for (size_t i = 0; i < 10; i++) {
+        int_list.vtable->append(&int_list, 9 - i);
+        printf("%d, ", int_list.tail->value);
+    }
+    int_list.vtable->sort(&int_list, int_compare);
+
+//    original_size = int_list.size;
+//    for (size_t i = 0; i < original_size; i++)
+//        int_list.vtable->remove(&int_list, 0); //todo: make a clear() and clear_callback() func
+//    assert(int_list.size == 0);
+//
+////    unsigned seed = time(NULL);
+//    unsigned seed = 1679713952;
+//    srand(seed);
+//    printf("seed: %d\n", seed);
+//    for (size_t i = 0; i < 500; i++) {
+//        int_list.vtable->append(&int_list, rand() % 1000);
+//        printf("%d, ", int_list.tail->value);
+//    }
+//    int_list.vtable->sort(&int_list, int_compare);
 }

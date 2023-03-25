@@ -341,6 +341,8 @@ TEMPLATE_INTERNAL_staticish struct TEMPLATE_INTERNAL_TYPE_NAME(sub_list) TEMPLAT
     while (r_idx < r_end) {
         *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next) = r_cur;
         r_idx++;
+        if (r_cur->next != NULL)
+            r_cur = r_cur->next;
         *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next->prev) = merged_tail;
         merged_tail = merged_tail->next;
     }
