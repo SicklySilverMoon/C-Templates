@@ -152,6 +152,8 @@ void list_test() {
 
     //todo: test sort
     int_list.vtable->sort(&int_list, int_compare);
+    assert(int_list.head->prev == NULL);
+    assert(int_list.tail->next == NULL);
     for (size_t i = 0; i < int_list.size; i++) {
         assert(*int_list.vtable->get(&int_list, i) == i);
     }

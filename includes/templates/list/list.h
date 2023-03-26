@@ -308,7 +308,7 @@ TEMPLATE_INTERNAL_staticish struct TEMPLATE_INTERNAL_TYPE_NAME(sub_list) TEMPLAT
     TEMPLATE_INTERNAL_SHORT_CAT(list_node)* r_cur = right;
     TEMPLATE_INTERNAL_SHORT_CAT(list_node)* merged_head = NULL;
     TEMPLATE_INTERNAL_SHORT_CAT(list_node)* merged_tail = NULL;
-    while (l_idx < l_end) {
+    while (l_idx < l_end && r_idx < r_end) {
         if (comp(&l_cur->value, &r_cur->value) < 0) {
             if (merged_head == NULL)
                 merged_tail = l_cur;
@@ -338,14 +338,28 @@ TEMPLATE_INTERNAL_staticish struct TEMPLATE_INTERNAL_TYPE_NAME(sub_list) TEMPLAT
         assert(merged_tail->next != merged_tail);
         assert(merged_tail->prev != merged_tail);
     }
+    while (l_idx < l_end) {
+        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next) = l_cur;
+        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next->prev) = merged_tail;
+        l_idx++;
+        if (l_cur->next != right && l_cur->next != NULL)
+            l_cur = l_cur->next;
+    }
     while (r_idx < r_end) {
         *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next) = r_cur;
+        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next->prev) = merged_tail;
         r_idx++;
         if (r_cur->next != NULL)
             r_cur = r_cur->next;
-        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next->prev) = merged_tail;
-        merged_tail = merged_tail->next;
     }
+//    while (r_idx < r_end) {
+//        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next) = r_cur;
+//        r_idx++;
+//        if (r_cur->next != NULL)
+//            r_cur = r_cur->next;
+//        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next->prev) = merged_tail;
+//        merged_tail = merged_tail->next;
+//    }
     struct TEMPLATE_INTERNAL_TYPE_NAME(sub_list) ret = {merged_head, merged_tail};
     return ret;
 }
@@ -392,6 +406,17 @@ TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(sort)(struct TEMPLA
                 *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &list->head) = sub.left;
             assert(list->head->prev == NULL);
             left = right = sub.right->next;
+
+            TEMPLATE_INTERNAL_SHORT_CAT(list_node)* node = list->head;
+            while (node != NULL) {
+                assert(node->next != node);
+                assert(node->prev != node);
+                if (node != list->head)
+                    assert(node->prev != NULL);
+                if (node != list->tail)
+                    assert(node->next != NULL);
+                node = node->next;
+            }
         }
     }
     *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &list->tail) = sub.right;
