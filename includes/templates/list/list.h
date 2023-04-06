@@ -396,15 +396,24 @@ TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(sort)(struct TEMPLA
                 //(i + w) + 3 = (3 + 7) + 3 = 13
                 r_end = list->size - (i + width);
             }
-            for (size_t c = 0; c < width; c++)
+            for (size_t c = 0; c < r_end; c++)
                 right = right->next;
 
             assert(left != NULL);
             assert(right != NULL);
             sub = TEMPLATE_INTERNAL_func_name(merge)(left, right, l_end, r_end, sub.right, comp);
+            size_t chainLen = 0;
+            TEMPLATE_INTERNAL_SHORT_CAT(list_node)* temp = list->head;
+            while (temp != NULL) {
+                chainLen++;
+                temp = temp->next;
+            }
+            assert(list->size == chainLen);
+
             if (i == 0)
                 *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &list->head) = sub.left;
             assert(list->head->prev == NULL);
+            assert(list->tail->next == NULL);
             left = right = sub.right->next;
 
             TEMPLATE_INTERNAL_SHORT_CAT(list_node)* node = list->head;
