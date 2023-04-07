@@ -13,6 +13,8 @@ int int_compare(int* a, int* b) {
 }
 
 void list_test() {
+    printf("List test\n");
+
     list$int$ int_list = create_list$int$();
     list$long_long$ long_long_list = create_list$long_long$();
     list$int_const$ int_const_list = create_list$int_const$();
