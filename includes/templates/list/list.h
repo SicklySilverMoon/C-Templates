@@ -18,10 +18,7 @@ struct TEMPLATE_INTERNAL_FullName;
 TEMPLATE_INTERNAL_staticish struct TEMPLATE_INTERNAL_FullName TEMPLATE_INTERNAL_PREFIX_CAT(create_)(void);
 
 //Prototypes for vtable funcs
-//todo: sort, etc.
-// a function that deletes the list and takes in a single argument function that the val is passed to
-// (so lists holding pointers can have their pointers freed as the actual list is being freed)
-// see if you can't pull more macro trickery like `#define TEMPLATE_COMPARE` as some function and use that for sorting if present
+//todo: see if you can't pull more macro trickery like `#define TEMPLATE_COMPARE` as some function and use that for sorting if present
 // falling back to the standard comparison ops if not
 TEMPLATE_INTERNAL_staticish struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* TEMPLATE_INTERNAL_func_name(append)(struct TEMPLATE_INTERNAL_FullName* list, TEMPLATE_TYPE value);
 TEMPLATE_INTERNAL_staticish struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* TEMPLATE_INTERNAL_func_name(prepend)(struct TEMPLATE_INTERNAL_FullName* list, TEMPLATE_TYPE value);
@@ -34,8 +31,8 @@ TEMPLATE_INTERNAL_staticish TEMPLATE_TYPE TEMPLATE_INTERNAL_func_name(remove_nod
 TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(swap)(struct TEMPLATE_INTERNAL_FullName* list, size_t target1, size_t target2);
 TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(swap_node)(struct TEMPLATE_INTERNAL_FullName* list, struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* n1, struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* n2);
 TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(destroy)(struct TEMPLATE_INTERNAL_FullName* list);
-TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(destroy_callback)(struct TEMPLATE_INTERNAL_FullName* list, void (callback)(TEMPLATE_TYPE*));
-TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(sort)(struct TEMPLATE_INTERNAL_FullName* list, int (*comp)(TEMPLATE_TYPE*, TEMPLATE_TYPE*));
+TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(destroy_callback)(struct TEMPLATE_INTERNAL_FullName* list, void (callback)(TEMPLATE_TYPE*, void*), void* callContext);
+TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(sort)(struct TEMPLATE_INTERNAL_FullName* list, int (*comp)(TEMPLATE_TYPE*, TEMPLATE_TYPE*, void*), void* cmpContext);
 
 //vtable
 TEMPLATE_INTERNAL_externish struct {
@@ -254,7 +251,6 @@ TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(swap_node)(struct T
     *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &n1->next) = n2_next;
     *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &n2->prev) = n1_prev;
     *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &n2->next) = n1_next;
-    //todo: need to adjust n1->prev->next to point to n1 after, likewise with n2->next->prev
 
     if (n1->prev != NULL) { //n2 was NOT head
         *((struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &n1->prev->next) = n1;
@@ -280,155 +276,112 @@ TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(swap_node)(struct T
 }
 
 TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(destroy)(struct TEMPLATE_INTERNAL_FullName* list) {
-    TEMPLATE_INTERNAL_func_name(destroy_callback)(list, NULL);
+    TEMPLATE_INTERNAL_func_name(destroy_callback)(list, NULL, NULL);
 }
 
-TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(destroy_callback)(struct TEMPLATE_INTERNAL_FullName* list, void (callback)(TEMPLATE_TYPE*)) {
+TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(destroy_callback)(struct TEMPLATE_INTERNAL_FullName* list, void (callback)(TEMPLATE_TYPE*, void*), void* callContext) {
     struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* node = list->head;
     while (node) {
         struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* next = node->next;
         if (callback)
-            callback(&node->value);
+            callback(&node->value, callContext);
         free(node);
         node = next;
     }
+    *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &list->head) = NULL;
+    *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &list->tail) = NULL;
+    *((size_t*) &list->size) = 0;
 }
 
-struct TEMPLATE_INTERNAL_TYPE_NAME(sub_list) {
-    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* left;
-    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* right;
-};
 //https://en.wikipedia.org/wiki/Merge_sort#Bottom-up_implementation
 //Thanks wikipedia
-//todo: test these
 //todo: also add a macro like TEMPLATE_COMPARE with values like 0 meaning it uses <, 1 >, 2 <=, 3 >=, etc. and if not defined then require passing of a comp function
-TEMPLATE_INTERNAL_staticish struct TEMPLATE_INTERNAL_TYPE_NAME(sub_list) TEMPLATE_INTERNAL_func_name(merge)(TEMPLATE_INTERNAL_SHORT_CAT(list_node)* left, TEMPLATE_INTERNAL_SHORT_CAT(list_node)* right, size_t l_end, size_t r_end, TEMPLATE_INTERNAL_SHORT_CAT(list_node)* prev_right, int (*comp)(TEMPLATE_TYPE*, TEMPLATE_TYPE*)) {
-    size_t l_idx = 0, r_idx = 0;
-    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* l_cur = left;
-    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* r_cur = right;
-    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* merged_head = NULL;
-    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* merged_tail = NULL;
-    while (l_idx < l_end && r_idx < r_end) {
-        if (comp(&l_cur->value, &r_cur->value) < 0) {
-            if (merged_head == NULL)
-                merged_tail = l_cur;
-            else
-                *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next) = l_cur;
-            l_idx++;
-            if (l_cur->next != right && l_cur->next != NULL)
-                l_cur = l_cur->next;
+TEMPLATE_INTERNAL_staticish TEMPLATE_INTERNAL_SHORT_CAT(list_node)* TEMPLATE_INTERNAL_func_name(merge)(TEMPLATE_INTERNAL_SHORT_CAT(list_node)* left, TEMPLATE_INTERNAL_SHORT_CAT(list_node)* right, int (*comp)(TEMPLATE_TYPE*, TEMPLATE_TYPE*, void*), void* cmpContext) {
+    TEMPLATE_INTERNAL_SHORT_CAT(list_node) dummy = {0};
+    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* tail = &dummy;
+
+    while (left != NULL && right != NULL) {
+        if (comp(&left->value, &right->value, cmpContext) <= 0) {
+            *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &tail->next) = left;
+            *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &left->prev) = tail;
+            left = left->next;
         } else {
-            if (merged_head == NULL)
-                merged_tail = r_cur;
-            else
-                *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next) = r_cur;
-            r_idx++;
-            if (r_cur->next != NULL)
-                r_cur = r_cur->next;
+            *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &tail->next) = right;
+            *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &right->prev) = tail;
+            right = right->next;
         }
-        if (merged_head == NULL) {
-            merged_head = merged_tail;
-            *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->prev) = prev_right;
-            if (prev_right)
-                *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &prev_right->next) = merged_tail;
-        } else {
-            *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next->prev) = merged_tail;
-            merged_tail = merged_tail->next;
-        }
-        assert(merged_tail->next != merged_tail);
-        assert(merged_tail->prev != merged_tail);
+        tail = tail->next;
     }
-    while (l_idx < l_end) {
-        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next) = l_cur;
-        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next->prev) = merged_tail;
-        l_idx++;
-        if (l_cur->next != right && l_cur->next != NULL)
-            l_cur = l_cur->next;
+
+    if (left != NULL) {
+        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &tail->next) = left;
+        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &left->prev) = tail;
+    } else {
+        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &tail->next) = right;
+        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &right->prev) = tail;
     }
-    while (r_idx < r_end) {
-        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next) = r_cur;
-        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next->prev) = merged_tail;
-        r_idx++;
-        if (r_cur->next != NULL)
-            r_cur = r_cur->next;
-    }
-//    while (r_idx < r_end) {
-//        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next) = r_cur;
-//        r_idx++;
-//        if (r_cur->next != NULL)
-//            r_cur = r_cur->next;
-//        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &merged_tail->next->prev) = merged_tail;
-//        merged_tail = merged_tail->next;
+
+    *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &dummy.next->prev) = NULL;
+//    size_t jumps = 0;
+//    while (tail->next != NULL) {
+//        tail = tail->next;
+//        jumps++;
 //    }
-    struct TEMPLATE_INTERNAL_TYPE_NAME(sub_list) ret = {merged_head, merged_tail};
-    return ret;
+
+//    struct TEMPLATE_INTERNAL_TYPE_NAME(sub_list) sub = {dummy.next, tail};
+    return dummy.next;
 }
 
-TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(sort)(struct TEMPLATE_INTERNAL_FullName* list, int (*comp)(TEMPLATE_TYPE*, TEMPLATE_TYPE*)) {
-    struct TEMPLATE_INTERNAL_TYPE_NAME(sub_list) sub = {NULL, NULL};
-    for (size_t width = 1; width < list->size; width = width * 2) {
-        sub.left = NULL;
-        sub.right = NULL;
-        TEMPLATE_INTERNAL_SHORT_CAT(list_node)* left = list->head;
-        TEMPLATE_INTERNAL_SHORT_CAT(list_node)* right = list->head;
-        for (size_t i = 0; i < list->size; i += width * 2) {
-            size_t l_end = width;
-            size_t r_end = width;
-            if (i + width >= list->size) { //Means last sub-list is smaller than width, by def already sorted, gets merged into next
-                assert(sub.right->next != sub.right);
-                *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &sub.right->next->prev) = sub.right;
-                continue;
-            } else if (i + width * 2 > list->size) {
-                //i = 1, w = 2, s = 4
-                //
-                //i + 2 = 3
-                //3 < 4, all good
-                //
-                //i + w * 2 = 1 + 4 = 5
-                //5 > 4
-                //s - (i + w) = 4 - (1 + 2) = 1
-                //(i + w) + 1 = 1 + 2 + 1 = 4
-                //
-                //i = 3, w = 7, s = 13
-                //i+2w=17
-                //17>13
-                //s - (i + w) = 13 - (3 + 7) = 3
-                //(i + w) + 3 = (3 + 7) + 3 = 13
-                r_end = list->size - (i + width);
-            }
-            for (size_t c = 0; c < r_end; c++)
-                right = right->next;
+//define it as either the bit width of size_t (new to C23) or bits in a byte * sizeof(size_t), most systems will have these equivalent anyway
+#ifdef SIZE_WIDTH
+    #define BOT_UP_ARR_SIZE (SIZE_WIDTH)
+#else
+    #define BOT_UP_ARR_SIZE (sizeof(size_t) * CHAR_BIT)
+#endif
 
-            assert(left != NULL);
-            assert(right != NULL);
-            sub = TEMPLATE_INTERNAL_func_name(merge)(left, right, l_end, r_end, sub.right, comp);
-            size_t chainLen = 0;
-            TEMPLATE_INTERNAL_SHORT_CAT(list_node)* temp = list->head;
-            while (temp != NULL) {
-                chainLen++;
-                temp = temp->next;
-            }
-            assert(list->size == chainLen);
+TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(sort)(struct TEMPLATE_INTERNAL_FullName* list, int (*comp)(TEMPLATE_TYPE*, TEMPLATE_TYPE*, void*), void* cmpContext) {
+    if (list->size <= 1) {
+        return;
+    }
 
-            if (i == 0)
-                *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &list->head) = sub.left;
-            assert(list->head->prev == NULL);
-            assert(list->tail->next == NULL);
-            left = right = sub.right->next;
+    //"BOT_UP_ARR_SIZE constant assumes that your list has at most 2**BOT_UP_ARR_SIZE-1 nodes. (Given its based on size_t it's not actually possible to even hit this)
+    //It splits the array up so that split[i] is always either empty or contains a sorted list of size 2**i."
+    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* split[BOT_UP_ARR_SIZE] = {NULL};
+    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* current;
+    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* head = list->head;
 
-            TEMPLATE_INTERNAL_SHORT_CAT(list_node)* node = list->head;
-            while (node != NULL) {
-                assert(node->next != node);
-                assert(node->prev != node);
-                if (node != list->head)
-                    assert(node->prev != NULL);
-                if (node != list->tail)
-                    assert(node->next != NULL);
-                node = node->next;
+    while (head) {
+        current = head;
+        head = head->next;
+        *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &current->next) = NULL;
+
+        for (size_t i = 0; i < (sizeof(split) / sizeof(split[0])); i++) {
+            if (split[i] == NULL) {
+                split[i] = current;
+                break;
             }
+            current = TEMPLATE_INTERNAL_func_name(merge)(current, split[i], comp, cmpContext);
+            split[i] = NULL;
         }
     }
-    *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &list->tail) = sub.right;
+
+    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* carry = NULL;
+    for (size_t i = 0; i < (sizeof(split) / sizeof(split[0])); i++) {
+        if (split[i] != NULL) {
+            carry = TEMPLATE_INTERNAL_func_name(merge)(carry, split[i], comp, cmpContext);
+        } else {
+//            printf("split[%zu] is NULL\n", i);
+        }
+    }
+    TEMPLATE_INTERNAL_SHORT_CAT(list_node)* tail = carry;
+//    size_t jumps = 0;
+    while (tail->next) {
+        tail = tail->next;
+//        jumps++;
+    }
+
+    *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &list->head) = carry;
+    *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &list->tail) = tail;
 }
 #endif
 
