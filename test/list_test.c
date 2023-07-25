@@ -3,13 +3,19 @@
 
 #include <assert.h>
 #include <stdio.h>
+#include <time.h>
 
-int int_compare(int* a, int* b) {
+int int_compare(int* a, int* b, void* context) {
     if (*a > *b)
         return 1;
     else if (*a < *b)
         return -1;
     return 0;
+}
+
+void int_callback(int* val, void* context) {
+    assert(*val >= *((int*) context));
+    *((int*) context) = *val;
 }
 
 void list_test() {
@@ -84,6 +90,7 @@ void list_test() {
         node = node->prev;
     }
 
+    //Swap tests
     int_list.vtable->swap(&int_list, 0, int_list.size - 1);
     assert(int_list.head->prev == NULL);
     assert(int_list.tail->next == NULL);
@@ -91,7 +98,6 @@ void list_test() {
     assert(int_list.head->prev == NULL);
     assert(int_list.tail->next == NULL);
 
-    //Swap tests
     int_list.vtable->swap(&int_list, 3, 4);
     assert(*int_list.vtable->get(&int_list, 3) == 4);
     assert(*int_list.vtable->get(&int_list, 4) == 3);
@@ -147,11 +153,110 @@ void list_test() {
     assert(int_list.head->prev == NULL);
     assert(int_list.tail->next == NULL);
     assert(int_list.head->value == 0);
-    //todo: test swap_node
 
-    //todo: test destroy and destroy_callback
+    //Test swap_node
+    int_list.vtable->swap_node(&int_list, int_list.head, int_list.tail);
+    assert(int_list.head->value == 4);
+    assert(int_list.tail->value == 0);
+    assert(int_list.head->prev == NULL);
+    assert(int_list.tail->next == NULL);
 
-    //todo: test sort
-    int_list.vtable->sort(&int_list, int_compare);
-    return;
+    int_list.vtable->swap_node(&int_list, int_list.tail, int_list.head);
+    assert(int_list.head->value == 0);
+    assert(int_list.tail->value == 4);
+    assert(int_list.head->prev == NULL);
+    assert(int_list.tail->next == NULL);
+
+    node = int_list.vtable->get_node(&int_list, 2);
+    list_node$int$* node2 = int_list.vtable->get_node(&int_list, 3);
+    int_list.vtable->swap_node(&int_list, node, node2);
+    assert(*int_list.vtable->get(&int_list, 2) == 3);
+    assert(*int_list.vtable->get(&int_list, 3) == 2);
+    assert(int_list.head->prev == NULL);
+    assert(int_list.tail->next == NULL);
+
+    node = int_list.vtable->get_node(&int_list, 2);
+    node2 = int_list.vtable->get_node(&int_list, 3);
+    int_list.vtable->swap_node(&int_list, node, node2);
+    assert(*int_list.vtable->get(&int_list, 2) == 2);
+    assert(*int_list.vtable->get(&int_list, 3) == 3);
+    assert(int_list.head->prev == NULL);
+    assert(int_list.tail->next == NULL);
+
+    //Test destroy and destroy_callback
+    assert(int_list.size > 0);
+    int_list.vtable->destroy(&int_list);
+    assert(int_list.size == 0);
+
+    for (size_t i = 0; i < 5000; i++) {
+        int_list.vtable->append(&int_list, i);
+    }
+    assert(int_list.size == 5000);
+    int_list.vtable->destroy(&int_list);
+    assert(int_list.size == 0);
+
+    for (size_t i = 0; i < 5000; i++) {
+        int_list.vtable->append(&int_list, i);
+    }
+    assert(int_list.size == 5000);
+    int prev = INT_MIN;
+    int_list.vtable->destroy_callback(&int_list, int_callback, &prev);
+    assert(int_list.size == 0);
+
+    //test sort
+    int_list.vtable->append(&int_list, 3);
+    int_list.vtable->append(&int_list, 5);
+    int_list.vtable->append(&int_list, 1);
+    int_list.vtable->append(&int_list, 0);
+    int_list.vtable->append(&int_list, 4);
+    int_list.vtable->append(&int_list, 2);
+
+    int_list.vtable->sort(&int_list, int_compare, NULL);
+    assert(int_list.head->prev == NULL);
+    assert(int_list.tail->next == NULL);
+    for (size_t i = 0; i < int_list.size; i++) {
+        assert(*int_list.vtable->get(&int_list, i) == i);
+    }
+    prev = INT_MIN;
+    int_list.vtable->destroy_callback(&int_list, int_callback, &prev);
+    assert(int_list.size == 0);
+
+    assert(int_list.head == NULL);
+    assert(int_list.tail == NULL);
+    int_list.vtable->sort(&int_list, int_compare, NULL); //just ensure sorting an empty list doesn't crash
+    assert(int_list.size == 0);
+    assert(int_list.head == NULL);
+    assert(int_list.tail == NULL);
+
+    for (size_t i = 0; i < 10; i++) {
+        int_list.vtable->append(&int_list, 9 - i);
+//        printf("%d, ", int_list.tail->value);
+    }
+    int_list.vtable->sort(&int_list, int_compare, NULL);
+    prev = INT_MIN;
+    int_list.vtable->destroy_callback(&int_list, int_callback, &prev);
+    assert(int_list.size == 0);
+
+    unsigned seed = time(NULL);
+//    unsigned seed = 1679713952;
+//    printf("seed: %d\n", seed);
+    srand(seed);
+    for (size_t i = 0; i < 500; i++) {
+        int_list.vtable->append(&int_list, rand() % 1000);
+//        printf("%d, ", int_list.tail->value);
+    }
+    int_list.vtable->sort(&int_list, int_compare, NULL);
+    prev = INT_MIN;
+    int_list.vtable->destroy_callback(&int_list, int_callback, &prev);
+    assert(int_list.size == 0);
+
+    for (size_t i = 0; i < 500; i++) {
+        for (size_t j = 0; j < 10; j++) {
+            int_list.vtable->append(&int_list, rand() % 500);
+        }
+    }
+    int_list.vtable->sort(&int_list, int_compare, NULL);
+    prev = INT_MIN;
+    int_list.vtable->destroy_callback(&int_list, int_callback, &prev);
+    assert(int_list.size == 0);
 }
