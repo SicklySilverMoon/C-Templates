@@ -6,6 +6,6 @@
 
 //Just an example for the provided template(s)
 int main() {
-//    list_test();
+    list_test();
     vector_test();
 }

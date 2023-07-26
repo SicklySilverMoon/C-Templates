@@ -22,17 +22,17 @@ TEMPLATE_INTERNAL_staticish struct TEMPLATE_INTERNAL_FullName TEMPLATE_INTERNAL_
 // falling back to the standard comparison ops if not
 TEMPLATE_INTERNAL_staticish struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* TEMPLATE_INTERNAL_func_name(append)(struct TEMPLATE_INTERNAL_FullName* list, TEMPLATE_TYPE value);
 TEMPLATE_INTERNAL_staticish struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* TEMPLATE_INTERNAL_func_name(prepend)(struct TEMPLATE_INTERNAL_FullName* list, TEMPLATE_TYPE value);
-TEMPLATE_INTERNAL_staticish TEMPLATE_TYPE* TEMPLATE_INTERNAL_func_name(get)(struct TEMPLATE_INTERNAL_FullName* list, size_t target_idx);
+TEMPLATE_INTERNAL_staticish TEMPLATE_TYPE*                                 TEMPLATE_INTERNAL_func_name(get)(struct TEMPLATE_INTERNAL_FullName* list, size_t target_idx);
 TEMPLATE_INTERNAL_staticish struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* TEMPLATE_INTERNAL_func_name(get_node)(struct TEMPLATE_INTERNAL_FullName* list, size_t target_idx);
-TEMPLATE_INTERNAL_staticish TEMPLATE_TYPE* TEMPLATE_INTERNAL_func_name(add)(struct TEMPLATE_INTERNAL_FullName* list, size_t target_idx, TEMPLATE_TYPE value);
-TEMPLATE_INTERNAL_staticish TEMPLATE_TYPE* TEMPLATE_INTERNAL_func_name(add_node)(struct TEMPLATE_INTERNAL_FullName* list, struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* node, TEMPLATE_TYPE value);
-TEMPLATE_INTERNAL_staticish TEMPLATE_TYPE TEMPLATE_INTERNAL_func_name(remove)(struct TEMPLATE_INTERNAL_FullName* list, size_t target_idx);
-TEMPLATE_INTERNAL_staticish TEMPLATE_TYPE TEMPLATE_INTERNAL_func_name(remove_node)(struct TEMPLATE_INTERNAL_FullName* list, struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* node);
-TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(swap)(struct TEMPLATE_INTERNAL_FullName* list, size_t target1, size_t target2);
-TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(swap_node)(struct TEMPLATE_INTERNAL_FullName* list, struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* n1, struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* n2);
-TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(destroy)(struct TEMPLATE_INTERNAL_FullName* list);
-TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(destroy_callback)(struct TEMPLATE_INTERNAL_FullName* list, void (callback)(TEMPLATE_TYPE*, void*), void* callContext);
-TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(sort)(struct TEMPLATE_INTERNAL_FullName* list, int (*comp)(TEMPLATE_TYPE*, TEMPLATE_TYPE*, void*), void* cmpContext);
+TEMPLATE_INTERNAL_staticish TEMPLATE_TYPE*                                 TEMPLATE_INTERNAL_func_name(add)(struct TEMPLATE_INTERNAL_FullName* list, size_t target_idx, TEMPLATE_TYPE value);
+TEMPLATE_INTERNAL_staticish TEMPLATE_TYPE*                                 TEMPLATE_INTERNAL_func_name(add_node)(struct TEMPLATE_INTERNAL_FullName* list, struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* node, TEMPLATE_TYPE value);
+TEMPLATE_INTERNAL_staticish TEMPLATE_TYPE                                  TEMPLATE_INTERNAL_func_name(remove)(struct TEMPLATE_INTERNAL_FullName* list, size_t target_idx);
+TEMPLATE_INTERNAL_staticish TEMPLATE_TYPE                                  TEMPLATE_INTERNAL_func_name(remove_node)(struct TEMPLATE_INTERNAL_FullName* list, struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* node);
+TEMPLATE_INTERNAL_staticish void                                           TEMPLATE_INTERNAL_func_name(swap)(struct TEMPLATE_INTERNAL_FullName* list, size_t target1, size_t target2);
+TEMPLATE_INTERNAL_staticish void                                           TEMPLATE_INTERNAL_func_name(swap_node)(struct TEMPLATE_INTERNAL_FullName* list, struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* n1, struct TEMPLATE_INTERNAL_SHORT_CAT(list_node)* n2);
+TEMPLATE_INTERNAL_staticish void                                           TEMPLATE_INTERNAL_func_name(destroy)(struct TEMPLATE_INTERNAL_FullName* list);
+TEMPLATE_INTERNAL_staticish void                                           TEMPLATE_INTERNAL_func_name(destroy_callback)(struct TEMPLATE_INTERNAL_FullName* list, void (callback)(TEMPLATE_TYPE*, void*), void* callContext);
+TEMPLATE_INTERNAL_staticish void                                           TEMPLATE_INTERNAL_func_name(sort)(struct TEMPLATE_INTERNAL_FullName* list, int (*comp)(TEMPLATE_TYPE*, TEMPLATE_TYPE*));
 
 //vtable
 TEMPLATE_INTERNAL_externish struct {
@@ -296,12 +296,12 @@ TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(destroy_callback)(s
 //https://en.wikipedia.org/wiki/Merge_sort#Bottom-up_implementation
 //Thanks wikipedia
 //todo: also add a macro like TEMPLATE_COMPARE with values like 0 meaning it uses <, 1 >, 2 <=, 3 >=, etc. and if not defined then require passing of a comp function
-TEMPLATE_INTERNAL_staticish TEMPLATE_INTERNAL_SHORT_CAT(list_node)* TEMPLATE_INTERNAL_func_name(merge)(TEMPLATE_INTERNAL_SHORT_CAT(list_node)* left, TEMPLATE_INTERNAL_SHORT_CAT(list_node)* right, int (*comp)(TEMPLATE_TYPE*, TEMPLATE_TYPE*, void*), void* cmpContext) {
+TEMPLATE_INTERNAL_staticish TEMPLATE_INTERNAL_SHORT_CAT(list_node)* TEMPLATE_INTERNAL_func_name(merge)(TEMPLATE_INTERNAL_SHORT_CAT(list_node)* left, TEMPLATE_INTERNAL_SHORT_CAT(list_node)* right, int (*comp)(TEMPLATE_TYPE*, TEMPLATE_TYPE*)) {
     TEMPLATE_INTERNAL_SHORT_CAT(list_node) dummy = {0};
     TEMPLATE_INTERNAL_SHORT_CAT(list_node)* tail = &dummy;
 
     while (left != NULL && right != NULL) {
-        if (comp(&left->value, &right->value, cmpContext) <= 0) {
+        if (comp(&left->value, &right->value) <= 0) {
             *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &tail->next) = left;
             *((TEMPLATE_INTERNAL_SHORT_CAT(list_node)**) &left->prev) = tail;
             left = left->next;
@@ -339,7 +339,7 @@ TEMPLATE_INTERNAL_staticish TEMPLATE_INTERNAL_SHORT_CAT(list_node)* TEMPLATE_INT
     #define BOT_UP_ARR_SIZE (sizeof(size_t) * CHAR_BIT)
 #endif
 
-TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(sort)(struct TEMPLATE_INTERNAL_FullName* list, int (*comp)(TEMPLATE_TYPE*, TEMPLATE_TYPE*, void*), void* cmpContext) {
+TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(sort)(struct TEMPLATE_INTERNAL_FullName* list, int (*comp)(TEMPLATE_TYPE*, TEMPLATE_TYPE*)) {
     if (list->size <= 1) {
         return;
     }
@@ -360,7 +360,7 @@ TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(sort)(struct TEMPLA
                 split[i] = current;
                 break;
             }
-            current = TEMPLATE_INTERNAL_func_name(merge)(current, split[i], comp, cmpContext);
+            current = TEMPLATE_INTERNAL_func_name(merge)(current, split[i], comp);
             split[i] = NULL;
         }
     }
@@ -368,7 +368,7 @@ TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(sort)(struct TEMPLA
     TEMPLATE_INTERNAL_SHORT_CAT(list_node)* carry = NULL;
     for (size_t i = 0; i < (sizeof(split) / sizeof(split[0])); i++) {
         if (split[i] != NULL) {
-            carry = TEMPLATE_INTERNAL_func_name(merge)(carry, split[i], comp, cmpContext);
+            carry = TEMPLATE_INTERNAL_func_name(merge)(carry, split[i], comp);
         } else {
 //            printf("split[%zu] is NULL\n", i);
         }

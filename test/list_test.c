@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <time.h>
 
-int int_compare(int* a, int* b, void* context) {
+int int_compare(int* a, int* b) {
     if (*a > *b)
         return 1;
     else if (*a < *b)
@@ -19,7 +19,7 @@ void int_callback(int* val, void* context) {
 }
 
 void list_test() {
-    printf("List test\n");
+    printf("Starting list test\n");
 
     list$int$ int_list = create_list$int$();
     list$long_long$ long_long_list = create_list$long_long$();
@@ -211,7 +211,7 @@ void list_test() {
     int_list.vtable->append(&int_list, 4);
     int_list.vtable->append(&int_list, 2);
 
-    int_list.vtable->sort(&int_list, int_compare, NULL);
+    int_list.vtable->sort(&int_list, int_compare);
     assert(int_list.head->prev == NULL);
     assert(int_list.tail->next == NULL);
     for (size_t i = 0; i < int_list.size; i++) {
@@ -223,7 +223,7 @@ void list_test() {
 
     assert(int_list.head == NULL);
     assert(int_list.tail == NULL);
-    int_list.vtable->sort(&int_list, int_compare, NULL); //just ensure sorting an empty list doesn't crash
+    int_list.vtable->sort(&int_list, int_compare); //just ensure sorting an empty list doesn't crash
     assert(int_list.size == 0);
     assert(int_list.head == NULL);
     assert(int_list.tail == NULL);
@@ -232,7 +232,7 @@ void list_test() {
         int_list.vtable->append(&int_list, 9 - i);
 //        printf("%d, ", int_list.tail->value);
     }
-    int_list.vtable->sort(&int_list, int_compare, NULL);
+    int_list.vtable->sort(&int_list, int_compare);
     prev = INT_MIN;
     int_list.vtable->destroy_callback(&int_list, int_callback, &prev);
     assert(int_list.size == 0);
@@ -245,7 +245,7 @@ void list_test() {
         int_list.vtable->append(&int_list, rand() % 1000);
 //        printf("%d, ", int_list.tail->value);
     }
-    int_list.vtable->sort(&int_list, int_compare, NULL);
+    int_list.vtable->sort(&int_list, int_compare);
     prev = INT_MIN;
     int_list.vtable->destroy_callback(&int_list, int_callback, &prev);
     assert(int_list.size == 0);
@@ -255,7 +255,7 @@ void list_test() {
             int_list.vtable->append(&int_list, rand() % 500);
         }
     }
-    int_list.vtable->sort(&int_list, int_compare, NULL);
+    int_list.vtable->sort(&int_list, int_compare);
     prev = INT_MIN;
     int_list.vtable->destroy_callback(&int_list, int_callback, &prev);
     assert(int_list.size == 0);

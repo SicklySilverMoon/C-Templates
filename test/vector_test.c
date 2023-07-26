@@ -10,21 +10,21 @@
         assert(vec.arr[i] == i); \
     }
 
-size_t callback_counter = 0;
-
-static void callback_test(int* val) {
-    assert(*val == callback_counter);
-    callback_counter++;
+static void callback_test(int* val, void* prevPointer) {
+    assert(*val == *((int*) prevPointer));
+    *((int*) prevPointer) += 1;
 }
 
 void vector_test() {
-    printf("Vector test\n");
+    printf("Starting vector test\n");
 
+    //Test create
     vector$int$ vectorInt = create_vector$int$();
     assert(vectorInt.size == 0);
     assert(vectorInt.arr == NULL);
     assert(vectorInt.capacity == 0);
 
+    //Test append and prepend
     vectorInt.vtable->append(&vectorInt, 1);
     assert(vectorInt.size == 1);
     assert(vectorInt.capacity >= 1);
@@ -41,9 +41,11 @@ void vector_test() {
     assert(vectorInt.arr[1] == 1);
     assert(vectorInt.arr[2] == 3);
 
+    //Test get
     assert(*vectorInt.vtable->get(&vectorInt, 0) == 0);
     assert(*vectorInt.vtable->get(&vectorInt, 1) == 1);
 
+    //Test add in middle
     vectorInt.vtable->add(&vectorInt, 2, 2);
     assert(vectorInt.size == 4);
     assert(vectorInt.capacity >= 4);
@@ -59,6 +61,7 @@ void vector_test() {
     }
     loop_check(vectorInt, 10);
 
+    //Test remove
     for (ptrdiff_t i = vectorInt.size - 1; i >= 0; i--) {
         vectorInt.vtable->remove(&vectorInt, i);
         assert(vectorInt.size == i);
@@ -69,6 +72,7 @@ void vector_test() {
     assert(vectorInt.size == 1);
     assert(vectorInt.capacity > 1);
 
+    //Test shrink and reserve
     vectorInt.vtable->shrink_to_fit(&vectorInt);
     assert(vectorInt.size == 1);
     assert(vectorInt.capacity == 1);
@@ -82,6 +86,7 @@ void vector_test() {
     assert(vectorInt.capacity == 10);
     loop_check(vectorInt, 2);
 
+    //Test swap
     vectorInt.vtable->swap(&vectorInt, 0, 1);
     assert(vectorInt.size == 2);
     assert(vectorInt.capacity == 10);
@@ -92,6 +97,7 @@ void vector_test() {
     assert(vectorInt.capacity == 10);
     loop_check(vectorInt, 2);
 
+    //Test destroy and destroy_callback
     vectorInt.vtable->destroy(&vectorInt);
     assert(vectorInt.arr == NULL);
     assert(vectorInt.size == 0);
@@ -102,7 +108,8 @@ void vector_test() {
         vectorInt.vtable->append(&vectorInt, i);
     }
     loop_check(vectorInt, 10);
-    vectorInt.vtable->destroy_callback(&vectorInt, callback_test);
+    int prev = 0;
+    vectorInt.vtable->destroy_callback(&vectorInt, callback_test, &prev);
     assert(vectorInt.arr == NULL);
     assert(vectorInt.size == 0);
     assert(vectorInt.capacity == 0);

@@ -15,11 +15,11 @@ TEMPLATE_INTERNAL_staticish TEMPLATE_TYPE* TEMPLATE_INTERNAL_func_name(append)(s
 TEMPLATE_INTERNAL_staticish TEMPLATE_TYPE* TEMPLATE_INTERNAL_func_name(prepend)(struct TEMPLATE_INTERNAL_FullName* vec, TEMPLATE_TYPE value);
 TEMPLATE_INTERNAL_staticish TEMPLATE_TYPE* TEMPLATE_INTERNAL_func_name(get)(struct TEMPLATE_INTERNAL_FullName* vec, size_t idx);
 TEMPLATE_INTERNAL_staticish TEMPLATE_TYPE* TEMPLATE_INTERNAL_func_name(add)(struct TEMPLATE_INTERNAL_FullName* vec, size_t idx, TEMPLATE_TYPE value);
-TEMPLATE_INTERNAL_staticish TEMPLATE_TYPE TEMPLATE_INTERNAL_func_name(remove)(struct TEMPLATE_INTERNAL_FullName* vec, size_t idx);
-TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(swap)(struct TEMPLATE_INTERNAL_FullName* vec, size_t idx1, size_t idx2);
-TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(destroy)(struct TEMPLATE_INTERNAL_FullName* vec);
-TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(destroy_callback)(struct TEMPLATE_INTERNAL_FullName* vec, void (callback)(TEMPLATE_TYPE*));
-TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(sort)(struct TEMPLATE_INTERNAL_FullName* vec, int (*comp)(void const*, void const*));
+TEMPLATE_INTERNAL_staticish TEMPLATE_TYPE  TEMPLATE_INTERNAL_func_name(remove)(struct TEMPLATE_INTERNAL_FullName* vec, size_t idx);
+TEMPLATE_INTERNAL_staticish void           TEMPLATE_INTERNAL_func_name(swap)(struct TEMPLATE_INTERNAL_FullName* vec, size_t idx1, size_t idx2);
+TEMPLATE_INTERNAL_staticish void           TEMPLATE_INTERNAL_func_name(destroy)(struct TEMPLATE_INTERNAL_FullName* vec);
+TEMPLATE_INTERNAL_staticish void           TEMPLATE_INTERNAL_func_name(destroy_callback)(struct TEMPLATE_INTERNAL_FullName* vec, void (callback)(TEMPLATE_TYPE*, void*), void* callContext);
+TEMPLATE_INTERNAL_staticish void           TEMPLATE_INTERNAL_func_name(sort)(struct TEMPLATE_INTERNAL_FullName* vec, int (*comp)(void const*, void const*));
 
 //vtable
 TEMPLATE_INTERNAL_externish struct {
@@ -112,7 +112,7 @@ TEMPLATE_INTERNAL_staticish TEMPLATE_TYPE* TEMPLATE_INTERNAL_func_name(prepend)(
         if (TEMPLATE_INTERNAL_func_name(reserve)(vec, vec->capacity * 2) == NULL)
             return NULL;
     }
-    memmove(vec->arr + 1, vec->arr, vec->size);
+    memmove(vec->arr + 1, vec->arr, vec->size * sizeof(TEMPLATE_TYPE));
     *((size_t*) &vec->size) = vec->size + 1;
     vec->arr[0] = value;
     return &vec->arr[0];
@@ -133,7 +133,7 @@ TEMPLATE_INTERNAL_staticish TEMPLATE_TYPE* TEMPLATE_INTERNAL_func_name(add)(stru
         if (TEMPLATE_INTERNAL_func_name(reserve)(vec, vec->capacity * 2) == NULL)
             return NULL;
     }
-    memmove(vec->arr + idx + 1, vec->arr + idx, vec->size - idx);
+    memmove(vec->arr + idx + 1, vec->arr + idx, (vec->size - idx) * sizeof(TEMPLATE_TYPE));
     *((size_t*) &vec->size) = vec->size + 1;
     vec->arr[idx] = value;
     return &vec->arr[idx];
@@ -143,7 +143,7 @@ TEMPLATE_INTERNAL_staticish TEMPLATE_TYPE TEMPLATE_INTERNAL_func_name(remove)(st
 //    if (vec->arr == NULL || idx >= vec->size) //todo: the inability to signal failure here is an issue, figure out what to return (or just make it UB to call w/ invalid params)
 //        return NULL;
     TEMPLATE_TYPE val = vec->arr[idx];
-    memmove(vec->arr + idx, vec->arr + idx + 1, vec->size - idx - 1);
+    memmove(vec->arr + idx, vec->arr + idx + 1, (vec->size - idx - 1) * sizeof(TEMPLATE_TYPE));
     *((size_t*) &vec->size) = vec->size - 1;
     return val;
 }
@@ -163,9 +163,9 @@ TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(destroy)(struct TEM
     *((size_t*) &vec->capacity) = 0;
 }
 
-TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(destroy_callback)(struct TEMPLATE_INTERNAL_FullName* vec, void (callback)(TEMPLATE_TYPE*)) {
+TEMPLATE_INTERNAL_staticish void TEMPLATE_INTERNAL_func_name(destroy_callback)(struct TEMPLATE_INTERNAL_FullName* vec, void (callback)(TEMPLATE_TYPE*, void*), void* callContext) {
     for (size_t i = 0; i < vec->size; i++)
-        callback(vec->arr + i);
+        callback(vec->arr + i, callContext);
     TEMPLATE_INTERNAL_func_name(destroy)(vec);
 }
 

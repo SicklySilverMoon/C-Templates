@@ -12,9 +12,9 @@ typedef long long long_long;
 #define TEMPLATE_TYPE long_long
 #include <templates/vector/vector.h>
 
-typedef int const int_const;
-#define TEMPLATE_TYPE int_const
-#include <templates/vector/vector.h>
+//typedef int const int_const;
+//#define TEMPLATE_TYPE int_const
+//#include <templates/vector/vector.h>
 
 void vector_test();
 
