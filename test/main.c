@@ -1,6 +1,3 @@
-#include <stdio.h>
-
-//#include "types.h"
 #include "list_test.h"
 #include "vector_test.h"
 
